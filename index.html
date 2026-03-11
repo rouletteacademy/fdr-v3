@@ -1,0 +1,1383 @@
+<!-- PART 1 START -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>⚓ Flying Dutchman • Command Center</title>
+<style>
+/* ── TOKENS ── */
+:root {
+  --sea-deep: #021b30;
+  --sea-mid:  #0b3b5a;
+  --sea-light:#1c6b96;
+  --neon:     #4df;
+  --neon2:    rgba(68, 220, 255, 0.25);
+  --gold:     #c8952a;
+  --gold2:    #f0c060;
+  --glass:    rgba(10, 30, 50, 0.25);
+  --glass2:   rgba(20, 50, 80, 0.3);
+  --border:   rgba(68, 220, 255, 0.6);
+  --borderG:  rgba(200, 149, 42, 0.5);
+  --t1:       rgba(255, 248, 220, 0.96);
+  --t2:       rgba(200, 220, 240, 0.8);
+  --t3:       rgba(150, 200, 230, 0.6);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", sans-serif;
+  background: var(--sea-deep);
+  color: var(--t1);
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Фон */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 70%, rgba(0, 180, 230, 0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 30%, rgba(100, 220, 255, 0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 50%, rgba(0, 20, 40, 0.7) 100%),
+    linear-gradient(145deg, #0b4b7a 0%, #03223a 60%, #010c18 100%);
+}
+body::after {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.06) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+.layer { position:relative; z-index:1; }
+
+/* Верхняя панель (3 зоны) */
+.topbar {
+  flex-shrink:0;
+  background: rgba(6,18,34,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 2px solid var(--border);
+  padding: 0 14px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  position:relative; z-index:10;
+  box-shadow: 0 0 15px var(--neon);
+}
+.tb-left { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.livdot { width:5px; height:5px; border-radius:50%; background:#4caf50; box-shadow:0 0 8px #4caf50; animation:ld 2.5s infinite; }
+@keyframes ld{0%,100%{opacity:1}50%{opacity:.25}}
+.anchor { font-size:1.1rem; filter:drop-shadow(0 0 8px var(--neon)); }
+.datetime { display:flex; flex-direction:column; margin-right:8px; }
+.tb-time { font-size:14px; font-weight:700; color:var(--gold2); text-shadow:0 0 12px rgba(200,149,42,0.5); font-variant-numeric:tabular-nums; line-height:1.2; }
+.tb-date { font-size:10px; color:var(--t3); line-height:1.2; }
+.tb-weather { font-size:11px; color:var(--t2); background:rgba(0,212,255,0.1); border:1px solid var(--border); border-radius:20px; padding:3px 10px; cursor:pointer; box-shadow:0 0 8px var(--neon); white-space:nowrap; }
+.tool-group { display:flex; align-items:center; gap:5px; }
+.tool-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; border:1px solid var(--border); background:rgba(0,0,0,0.25); box-shadow:0 0 6px var(--neon); cursor:pointer; transition:all 0.15s; }
+.tool-icon:active { transform:scale(0.93); background:rgba(0,212,255,0.15); box-shadow:0 0 12px #fff; }
+.tb-center { display:flex; align-items:center; justify-content:center; gap:8px; flex:1 1 auto; min-width:0; }
+.mode-indicator { background:rgba(0,0,0,0.3); border:1px solid var(--borderG); border-radius:30px; padding:4px 16px; font-size:12px; font-weight:600; color:var(--gold2); text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+.status-string { font-size:10px; color:var(--t3); background:rgba(0,0,0,0.2); border-radius:12px; padding:2px 8px; white-space:nowrap; }
+.tb-right { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.comm-group { display:flex; align-items:center; gap:3px; padding-right:6px; border-right:1px solid rgba(68,220,255,0.3); }
+.ai-group { display:flex; align-items:center; gap:3px; }
+.comm-icon { width:26px; height:26px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:0.85rem; border:1px solid var(--border); background:rgba(0,0,0,0.25); box-shadow:0 0 5px var(--neon); cursor:pointer; transition:all 0.15s; position:relative; }
+.comm-icon:active { transform:scale(0.92); background:rgba(0,212,255,0.2); }
+.tbadge { position:absolute; top:-2px; right:-2px; width:12px; height:12px; border-radius:50%; background:#e53935; font-size:7px; font-weight:800; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 0 6px #e53935; }
+
+/* Основная сетка */
+.body3 {
+  flex:1; overflow:hidden;
+  display:grid;
+  grid-template-columns: 210px 1fr 250px;
+  gap: 8px;
+  padding: 8px;
+  position:relative; z-index:1;
+}
+.panel {
+  background: var(--glass);
+  backdrop-filter: blur(22px);
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 25px var(--neon), 0 8px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: box-shadow 0.2s ease, transform 0.1s ease;
+}
+.panel:active { box-shadow:0 0 40px #8ef; transform:scale(0.99); }
+.panel-hdr { padding:9px 13px 7px; border-bottom:2px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
+.ph-t { font-size:9px; font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:var(--neon); text-shadow:0 0 6px var(--neon); }
+.ph-live { display:flex; align-items:center; gap:4px; font-size:8px; color:var(--t3); }
+.pscroll { flex:1; overflow-y:auto; }
+.pscroll::-webkit-scrollbar{width:2px;}
+.pscroll::-webkit-scrollbar-thumb{background:var(--neon); border-radius:2px;}
+
+/* Левая панель (Media) */
+.media-row { display:flex; align-items:center; gap:9px; padding:9px 12px; border-bottom:1px solid rgba(0,212,255,0.1); cursor:pointer; transition:background .15s; }
+.media-row:active { background:rgba(0,212,255,0.12); }
+.mi { width:34px; height:34px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1rem; border:1px solid var(--border); box-shadow:0 0 8px var(--neon); }
+.mi-yt  { background:linear-gradient(145deg,#ff0000,#cc0000); }
+.mi-gm  { background:linear-gradient(145deg,#ea4335,#4285f4); }
+.mi-tg  { background:linear-gradient(145deg,#2ca5e0,#1579a7); }
+.mi-tt  { background:#111; color:#fff; }
+.mi-wa  { background:linear-gradient(145deg,#25d366,#128c7e); }
+.mi-fb  { background:linear-gradient(145deg,#1877f2,#1255ba); }
+.mi-x   { background:#111; }
+.mi-go  { background:linear-gradient(145deg,#4285f4,#34a853); }
+.m-info { flex:1; overflow:hidden; }
+.m-nm { font-size:11.5px; font-weight:600; color:var(--t1); line-height:1.2; }
+.m-ms { font-size:9px; color:var(--t3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+.m-bdg { font-size:8px; font-weight:800; background:rgba(229,57,53,0.9); color:#fff; min-width:18px; height:18px; border-radius:12px; display:flex; align-items:center; justify-content:center; padding:0 4px; box-shadow:0 0 6px #e53935; }
+.media-preview { padding:8px 11px; border-top:1px solid var(--border); background:rgba(0,0,0,0.2); flex-shrink:0; min-height:60px; font-size:10px; color:var(--t2); }
+.mp-title { font-size:9px; font-weight:800; letter-spacing:.1em; color:var(--neon); margin-bottom:4px; }
+.mp-content { background:rgba(0,0,0,0.3); border-radius:8px; padding:6px; border:1px solid var(--border); }
+.gs-row { padding:8px 11px; flex-shrink:0; border-top:1px solid var(--border); }
+.gs-inp { width:100%; background:rgba(0,0,0,0.35); border:1px solid var(--border); border-radius:20px; padding:7px 13px; color:var(--t1); font-size:11px; outline:none; box-shadow:inset 0 0 6px #000, 0 0 8px var(--neon); }
+.gs-inp::placeholder{color:var(--t3);}
+.gs-inp:focus{border-color:var(--neon); box-shadow:0 0 12px var(--neon), inset 0 0 4px #000;}
+
+/* Центральная панель */
+.center-panel {
+  border-color: var(--borderG);
+  box-shadow: 0 0 35px var(--neon), 0 8px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,210,80,0.1);
+  position:relative;
+}
+.gc { position:absolute; width:20px; height:20px; z-index:5; pointer-events:none; border-color:var(--gold); border-style:solid; filter:drop-shadow(0 0 6px gold); }
+.gc-tl{top:6px; left:6px; border-width:2px 0 0 2px; border-top-left-radius:4px;}
+.gc-tr{top:6px; right:6px; border-width:2px 2px 0 0; border-top-right-radius:4px;}
+.gc-bl{bottom:6px; left:6px; border-width:0 0 2px 2px; border-bottom-left-radius:4px;}
+.gc-br{bottom:6px; right:6px; border-width:0 2px 2px 0; border-bottom-right-radius:4px;}
+
+/* Контейнеры режимов */
+#center-full-journal, #center-split {
+  position:absolute; inset:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+#center-split {
+  display: none;
+  flex-direction: row;
+}
+.split-left {
+  width: 30%;
+  border-right: 1px solid var(--borderG);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(0,0,0,0.2);
+}
+.split-right {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px;
+}
+.mini-journal-header {
+  padding: 8px;
+  border-bottom: 1px solid var(--borderG);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--gold2);
+  text-transform: uppercase;
+  flex-shrink:0;
+}
+.mini-timeline {
+  flex:1;
+  overflow-y: auto;
+  padding: 8px;
+  font-size: 11px;
+}
+.mini-timeline .mini-entry {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed rgba(200,149,42,0.2);
+  padding-bottom: 4px;
+}
+.mini-entry-date {
+  font-size: 8px;
+  color: var(--t3);
+  min-width: 45px;
+}
+.mini-entry-text {
+  color: var(--t2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Полноэкранный журнал */
+.jhead { text-align:center; padding:11px 12px 8px; border-bottom:1px solid var(--borderG); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2; }
+.jh-title { font-size:1.2rem; font-weight:800; background:linear-gradient(to right, var(--gold2), #fff5b0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:.04em; text-shadow:0 0 15px gold; }
+.jh-sub { font-size:8px; color:var(--t3); letter-spacing:.25em; text-transform:uppercase; margin-top:1px; }
+.jh-btns { display:flex; gap:5px; }
+.jbtn { width:28px; height:28px; border-radius:50%; background:rgba(0,0,0,0.3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.8rem; cursor:pointer; transition:all .15s; box-shadow:0 0 8px var(--neon); }
+.jbtn:active{transform:scale(.9); background:rgba(0,212,255,0.2);}
+.jbtn.add { background:linear-gradient(135deg,var(--gold),#8a5f00); border-color:var(--gold2); color:#fff; font-size:1rem; font-weight:900; box-shadow:0 0 16px rgba(200,149,42,0.6); }
+
+.timeline { flex:1; overflow-y:auto; padding:10px 12px; position:relative; z-index:1; }
+.timeline::-webkit-scrollbar{width:2px;}
+.timeline::-webkit-scrollbar-thumb{background:var(--gold); border-radius:2px;}
+.timeline::before { content:''; position:absolute; left:60px; top:0; bottom:0; width:1px; background:linear-gradient(to bottom, transparent, var(--gold) 15%, var(--gold) 85%, transparent); pointer-events:none; }
+.te { display:flex; gap:0; margin-bottom:9px; animation:tein .3s ease; }
+@keyframes tein{from{opacity:0; transform:translateX(-8px)}to{opacity:1; transform:none}}
+.te-date { width:52px; flex-shrink:0; text-align:right; padding-right:10px; padding-top:9px; }
+.te-d { display:block; font-size:10.5px; font-weight:700; color:var(--gold2); text-shadow:0 0 6px gold; }
+.te-t { font-size:8px; color:var(--t3); font-variant-numeric:tabular-nums; }
+.te-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; border:2px solid var(--border); background:var(--sea-deep); margin-top:11px; position:relative; z-index:2; box-shadow:0 0 8px var(--neon); }
+.dt-chat  { border-color:var(--neon); background:rgba(0,212,255,0.2); }
+.dt-idea  { border-color:#fbbf24; background:rgba(251,191,36,0.2); }
+.dt-doc   { border-color:#a78bfa; background:rgba(167,139,250,0.2); }
+.dt-task  { border-color:#f59e0b; background:rgba(245,158,11,0.2); }
+.dt-msg   { border-color:#2ca5e0; background:rgba(44,165,224,0.2); }
+.dt-fin   { border-color:#34d399; background:rgba(52,211,153,0.2); }
+.dt-proj  { border-color:var(--gold); background:rgba(200,149,42,0.2); }
+.te-body { flex:1; margin-left:8px; background:rgba(255,255,255,0.05); border:1px solid var(--borderG); border-radius:12px; padding:8px 11px; cursor:pointer; transition:all .15s; box-shadow:0 0 12px rgba(200,149,42,0.1); }
+.te-body:active { background:rgba(255,255,255,0.08); border-color:rgba(200,149,42,0.4); }
+.te-type { font-size:8.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; margin-bottom:2px; }
+.tc-chat{color:var(--neon)}.tc-idea{color:#fbbf24}.tc-doc{color:#a78bfa}
+.tc-task{color:#f59e0b}.tc-msg{color:#2ca5e0}.tc-fin{color:#34d399}.tc-proj{color:var(--gold2)}
+.te-title { font-size:12.5px; font-weight:600; color:var(--t1); margin-bottom:2px; }
+.te-desc  { font-size:10.5px; color:var(--t3); line-height:1.5; }
+.te-del { background:none; border:none; color:rgba(255,100,100,0.4); cursor:pointer; font-size:11px; padding:2px 4px; flex-shrink:0; line-height:1; margin-top:7px; transition:color .15s; }
+.te-del:hover,.te-del:active{color:#ff6464;}
+
+.addbar { padding:8px 11px; border-top:1px solid var(--borderG); flex-shrink:0; display:flex; gap:6px; align-items:center; position:relative; z-index:2; }
+.type-sel { background:rgba(0,0,0,0.35); border:1px solid var(--border); border-radius:20px; padding:7px 9px; color:var(--t2); font-size:11px; outline:none; flex-shrink:0; box-shadow:0 0 8px var(--neon); }
+.note-inp { flex:1; background:rgba(0,0,0,0.35); border:1px solid var(--border); border-radius:20px; padding:8px 14px; color:var(--t1); font-size:13px; outline:none; transition:border-color .18s; box-shadow:inset 0 0 6px #000, 0 0 8px var(--neon); }
+.note-inp:focus{border-color:var(--neon); box-shadow:0 0 12px var(--neon), inset 0 0 4px #000;}
+.note-inp::placeholder{color:var(--t3);}
+.note-add { width:34px; height:34px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--gold),#7a5000); border:1px solid var(--gold2); color:#fff; font-size:1rem; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(200,149,42,0.5); transition:all .18s; }
+.note-add:active{transform:scale(.92); box-shadow:0 0 22px gold;}
+
+/* Финансовые вкладки и блоки */
+.finance-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.fin-tab {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.fin-tab.active {
+  background: rgba(200,149,42,0.2);
+  border-color: var(--gold2);
+  color: var(--gold2);
+}
+.fin-content {
+  flex:1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.fin-section {
+  display: none;
+}
+.fin-section.active {
+  display: block;
+}
+.doc-list {
+  margin-top: 8px;
+}
+.doc-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.doc-info {
+  flex: 2;
+  min-width: 150px;
+}
+.doc-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t1);
+}
+.doc-meta {
+  font-size: 9px;
+  color: var(--t3);
+  display: flex;
+  gap: 12px;
+  margin-top: 3px;
+}
+.doc-status {
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(0,212,255,0.1);
+  color: var(--neon);
+}
+.doc-deadline {
+  font-size: 9px;
+  color: #f87171;
+}
+.doc-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.doc-btn {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 9px;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.doc-btn:active {
+  background: rgba(0,212,255,0.2);
+}
+.fin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.fin-header h4 {
+  font-size: 12px;
+  color: var(--gold2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.fin-actions {
+  display: flex;
+  gap: 6px;
+}
+.fin-action-btn {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 9px;
+  color: var(--t2);
+  cursor: pointer;
+}
+.fin-action-btn:active {
+  background: rgba(0,212,255,0.2);
+}
+/* Специально для Belastingdienst */
+.bd-blocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px,1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.bd-block {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+}
+.bd-block-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--neon);
+  margin-bottom: 5px;
+}
+.bd-block-item {
+  font-size: 9px;
+  color: var(--t3);
+  margin: 3px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Правая панель */
+.right-panel .panel-hdr .ai-mini { display:flex; gap:4px; }
+.ai-mini-icon { width:22px; height:22px; border-radius:5px; background:rgba(0,0,0,0.3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:0.75rem; cursor:pointer; transition:all 0.15s; }
+.ai-mini-icon:active { background:rgba(0,212,255,0.2); }
+
+.doc-view { padding:9px 11px; border-bottom:1px solid var(--border); flex-shrink:0; background:rgba(0,0,0,0.2); }
+.doc-view .dv-title { font-size:9px; font-weight:800; letter-spacing:.1em; color:var(--neon); margin-bottom:6px; }
+.dv-fields { background:rgba(0,0,0,0.3); border-radius:10px; padding:8px; border:1px solid var(--border); margin-bottom:8px; }
+.dv-field { display:flex; margin-bottom:5px; font-size:10px; }
+.dv-label { width:60px; color:var(--t3); }
+.dv-value { flex:1; color:var(--t2); word-break:break-word; }
+.dv-preview { background:rgba(0,0,0,0.2); border-radius:6px; padding:6px; font-size:9px; color:var(--t2); border:1px dashed var(--border); min-height:40px; margin-bottom:8px; }
+.dv-btns { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; }
+.dv-btn { background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:12px; padding:4px 8px; font-size:8px; color:var(--t2); cursor:pointer; transition:all .15s; }
+.dv-btn:active { background:rgba(0,212,255,0.2); }
+
+.ai-sec { padding:9px 11px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.ai-head { display:flex; align-items:center; gap:7px; margin-bottom:7px; }
+.ai-av { width:28px; height:28px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--neon),#0060a8); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:800; color:#fff; box-shadow:0 0 10px rgba(0,212,255,0.25); }
+.ai-nm { font-size:11px; font-weight:700; color:var(--t1); }
+.ai-st { font-size:8px; color:#4caf50; display:flex; align-items:center; gap:3px; }
+.eng-row { display:flex; gap:4px; margin-bottom:7px; }
+.eb { flex:1; padding:4px; border:1px solid var(--border); border-radius:8px; background:none; font-size:8.5px; color:var(--t3); cursor:pointer; font-weight:700; transition:all .15s; }
+.eb.on { background:rgba(0,212,255,0.1); border-color:rgba(0,212,255,0.3); color:var(--neon); }
+.msgs { max-height:95px; overflow-y:auto; margin-bottom:6px; }
+.msgs::-webkit-scrollbar{width:1px;}
+.msg-ai { font-size:10.5px; color:var(--t2); line-height:1.55; padding:3px 0; }
+.msg-u { font-size:10.5px; color:var(--neon); padding:3px 0; text-align:right; }
+.ai-chips { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
+.qc { font-size:8px; padding:2px 8px; border-radius:20px; border:1px solid var(--border); background:none; color:var(--t3); cursor:pointer; }
+.qc:active { background:rgba(0,212,255,0.1); color:var(--neon); }
+.ai-inp-row { display:flex; gap:5px; }
+.ai-ta { flex:1; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:12px; padding:6px 9px; color:var(--t1); font-size:11px; resize:none; outline:none; max-height:48px; line-height:1.4; }
+.ai-ta::placeholder{color:var(--t3);}
+.ai-ta:focus{border-color:var(--neon);}
+.ai-snd { width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg,var(--neon),#0060a8); border:none; border-radius:9px; cursor:pointer; color:#fff; font-size:.8rem; display:flex; align-items:center; justify-content:center; }
+.ai-snd:active{transform:scale(.92);}
+.think-dots { display:flex; gap:4px; padding:4px 0; align-items:center; }
+.td { width:5px; height:5px; border-radius:50%; background:var(--neon); animation:tdbn 1.2s infinite; }
+.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}
+@keyframes tdbn{0%,100%{transform:translateY(0); opacity:.2}50%{transform:translateY(-5px); opacity:1}}
+
+.sk-sec { border-bottom:1px solid var(--border); flex-shrink:0; padding:8px 11px; }
+.sk-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.sk-t { font-size:8.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase; color:rgba(0,212,255,0.55); }
+.sk-btns { display:flex; gap:4px; }
+.sk-btn { background:rgba(0,0,0,.3); border:1px solid var(--border); border-radius:8px; padding:3px 9px; font-size:9px; color:var(--t3); cursor:pointer; }
+.sk-btn:active { background:rgba(0,212,255,0.1); }
+#skCanvas { display:block; width:100%; height:100px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; cursor:crosshair; touch-action:none; background-image: linear-gradient(rgba(0,212,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.05) 1px, transparent 1px); background-size:12px 12px; }
+.sk-colors { display:flex; gap:4px; margin-top:5px; align-items:center; }
+.sco { width:14px; height:14px; border-radius:50%; cursor:pointer; border:2px solid rgba(255,255,255,.1); transition:all .15s; }
+.sco.on { border-color:#fff; box-shadow:0 0 5px currentColor; }
+#skSz { flex:1; accent-color:var(--neon); height:2px; }
+
+.an-sec { flex:1; overflow-y:auto; padding:8px 11px; }
+.an-sec::-webkit-scrollbar{width:2px;}
+.an-card { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; padding:9px 11px; margin-bottom:7px; }
+.an-t { font-size:8.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--neon); opacity:.6; margin-bottom:6px; }
+.mini-bars { display:flex; align-items:flex-end; gap:3px; height:34px; }
+.mb { flex:1; border-radius:2px 2px 0 0; background:rgba(0,212,255,0.3); min-width:5px; }
+.mb:nth-child(even){background:rgba(200,149,42,0.35);}
+.an-stats { display:flex; justify-content:space-between; margin-top:4px; }
+.as-n { font-size:12.5px; font-weight:700; color:var(--t1); font-variant-numeric:tabular-nums; }
+.as-l { font-size:8px; color:var(--t3); }
+
+.act-sec{display:none;}
+
+/* Нижний dock */
+.botnav { flex-shrink:0; background:rgba(6,18,34,0.88); backdrop-filter:blur(20px); border-top:1px solid var(--border); padding:5px 10px; display:flex; align-items:center; gap:6px; position:relative; z-index:10; flex-wrap:wrap; }
+.main-tabs { display:flex; gap:4px; flex-wrap:wrap; }
+.nt { padding:5px 12px; background:rgba(255,255,255,0.06); border:1px solid rgba(0,212,255,0.12); border-radius:30px; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:4px; box-shadow:0 0 6px var(--neon); font-size:11px; }
+.nt:active{transform:scale(.96);}
+.nt.on { background:rgba(200,149,42,0.15); border-color:var(--borderG); box-shadow:0 0 12px rgba(200,149,42,0.15), 0 0 12px var(--neon); }
+.nt-i{font-size:.9rem;}
+.nt-l{font-size:9px; font-weight:600; color:var(--t2);}
+.nt.on .nt-l{color:var(--gold2);}
+.quick-actions { display:flex; gap:3px; flex-wrap:wrap; margin-left:auto; }
+.qact { background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:30px; padding:4px 8px; display:flex; align-items:center; gap:3px; cursor:pointer; transition:all .15s; font-size:10px; color:var(--t2); }
+.qact:active { background:rgba(0,212,255,0.2); transform:scale(.95); }
+.qact span { font-size:1rem; }
+.cmd-row { background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:30px; padding:0 10px; display:flex; align-items:center; gap:4px; flex:1 1 200px; height:32px; box-shadow:0 0 6px var(--neon); }
+.cmd-p{font-size:12px; color:var(--gold2); opacity:.6; flex-shrink:0;}
+.cmd-i{flex:1; background:transparent; border:none; outline:none; font-size:10px; color:var(--t1);}
+.cmd-i::placeholder{color:var(--t3);}
+.cmd-mic{background:none; border:none; font-size:.9rem; color:var(--t3); cursor:pointer;}
+
+/* Overlay и попапы */
+.overlay{ position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(18px); z-index:200; display:none; align-items:center; justify-content:center; }
+.overlay.on{display:flex;}
+.popup{ background:rgba(8,20,38,.97); border:1px solid var(--border); border-radius:24px; padding:20px; max-width:94vw; width:380px; box-shadow:0 0 0 1px rgba(0,212,255,0.05), 0 30px 80px rgba(0,0,0,.9); animation:popin .25s cubic-bezier(.34,1.56,.64,1); position:relative; }
+@keyframes popin{from{opacity:0; transform:scale(.9) translateY(10px)}to{opacity:1; transform:none}}
+.popup-t{font-size:.9rem; font-weight:800; color:var(--neon); margin-bottom:.5rem;}
+.popup-close{ position:absolute; top:13px; right:15px; background:none; border:none; color:var(--t3); cursor:pointer; font-size:1.1rem; }
+.m-inp{ width:100%; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:12px; padding:9px 12px; color:var(--t1); font-size:13px; outline:none; margin-bottom:9px; }
+.m-inp:focus{border-color:var(--neon);}
+.m-inp::placeholder{color:var(--t3);}
+.m-sel{ width:100%; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:12px; padding:8px 11px; color:var(--t2); font-size:12px; outline:none; margin-bottom:9px; }
+.m-btns{display:flex; gap:7px; justify-content:flex-end;}
+.mbp{ background:linear-gradient(135deg,var(--neon),#0060a8); border:none; border-radius:12px; padding:9px 20px; color:#fff; font-weight:800; font-size:13px; cursor:pointer; }
+.mbc{ background:rgba(255,255,255,0.07); border:1px solid var(--border); border-radius:12px; padding:9px 14px; color:var(--t3); font-size:12px; cursor:pointer; }
+.mtabs{display:flex; background:rgba(0,0,0,0.3); border-radius:12px; padding:3px; margin-bottom:.8rem; gap:3px;}
+.mtab{flex:1; padding:5px; border:none; border-radius:9px; background:transparent; color:var(--t3); font-size:10px; font-weight:700; cursor:pointer; transition:all .14s;}
+.mtab.on{background:rgba(0,212,255,0.1); color:var(--t1); border:1px solid var(--border);}
+.popup-letter{width:520px; max-height:86vh; overflow-y:auto;}
+.popup-letter::-webkit-scrollbar{width:2px;}
+.letter-result{ background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; padding:12px; font-size:11.5px; line-height:1.9; color:var(--t2); min-height:110px; white-space:pre-wrap; font-family:Georgia,serif; margin-bottom:9px; }
+.toast{ position:fixed; bottom:72px; left:50%; transform:translateX(-50%); background:rgba(8,20,38,.97); border:1px solid var(--border); border-radius:12px; padding:9px 18px; font-size:12.5px; color:var(--t1); z-index:999; animation:tin .22s ease; white-space:nowrap; box-shadow:0 0 20px var(--neon); }
+@keyframes tin{from{opacity:0; transform:translateX(-50%) translateY(8px)}to{opacity:1; transform:translateX(-50%)}}
+
+/* Responsive */
+@media(max-width:760px){
+  .body3{grid-template-columns:1fr;}
+  .left-panel,.right-panel{display:none;}
+  .center-panel{border-radius:20px;}
+  .botnav{flex-direction:column; align-items:stretch;}
+  .tb-right .comm-group, .tb-right .ai-group { flex-wrap:wrap; }
+}
+@media(max-width:900px) and (orientation:portrait){
+  .left-panel,.right-panel{display:none;}
+  .body3{grid-template-columns:1fr;}
+}
+
+::-webkit-scrollbar{width:2px; height:2px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--neon); border-radius:2px;}
+</style>
+</head>
+<body>
+<!-- PART 1 END -->
+  <!-- PART 2 START -->
+
+<!-- POPUPS -->
+<div class="overlay" id="apiModal">
+  <div class="popup">
+    <button class="popup-close" onclick="closeOv('apiModal')">✕</button>
+    <div class="popup-t">🔑 AI Ключи</div>
+    <div style="font-size:10px;color:var(--t3);margin-bottom:.8rem">Хранятся только в браузере</div>
+    <div class="mtabs">
+      <button class="mtab on" id="mt-gem" onclick="switchMT('gem')">🟢 Gemini</button>
+      <button class="mtab" id="mt-gpt" onclick="switchMT('gpt')">⚪ ChatGPT</button>
+    </div>
+    <div id="mp-gem"><div style="font-size:9px;color:var(--t3);margin-bottom:5px">Бесплатно → aistudio.google.com</div><input class="m-inp" type="password" id="gemKey" placeholder="AIzaSy..."/></div>
+    <div id="mp-gpt" style="display:none"><input class="m-inp" type="password" id="gptKey" placeholder="sk-proj-..."/><select class="m-sel" id="gptModel"><option value="gpt-4o">GPT-4o</option><option value="gpt-4o-mini">GPT-4o mini</option></select></div>
+    <div class="m-btns"><button class="mbc" onclick="closeOv('apiModal')">Отмена</button><button class="mbp" onclick="saveKeys()">Сохранить</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="letterModal">
+  <div class="popup popup-letter">
+    <button class="popup-close" onclick="closeOv('letterModal')">✕</button>
+    <div class="popup-t">✉️ Официальное письмо</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px">
+      <div><div style="font-size:9px;color:var(--t3);margin-bottom:4px">КОМУ</div><input class="m-inp" id="l-org" value="Belastingdienst" style="margin-bottom:0"/></div>
+      <div><div style="font-size:9px;color:var(--t3);margin-bottom:4px">ЯЗЫК</div><select class="m-sel" id="l-lang" style="margin-bottom:0"><option value="nl">🇳🇱 Nederlands</option><option value="en">🇬🇧 English</option><option value="ru">🇷🇺 Русский</option></select></div>
+    </div>
+    <div style="font-size:9px;color:var(--t3);margin-bottom:4px">СУТЬ</div>
+    <textarea id="l-brief" class="m-inp" style="min-height:52px;resize:vertical" placeholder="Фирма не активна, прошу пересмотр..."></textarea>
+    <button class="mbp" onclick="genLetter()" style="width:100%;margin-bottom:9px;padding:10px">🤖 Генерировать письмо</button>
+    <div id="l-load" style="display:none;text-align:center;padding:8px;color:var(--t3);font-size:11px">⏳ Генерирую...</div>
+    <div id="l-out" style="display:none">
+      <div class="letter-result" id="l-txt"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="mbp" onclick="copyLetter()">📋 Копировать</button>
+        <button class="mbc" onclick="logLetter()">📓 В журнал</button>
+        <button class="mbc" onclick="closeOv('letterModal')">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="qnModal">
+  <div class="popup">
+    <button class="popup-close" onclick="closeOv('qnModal')">✕</button>
+    <div class="popup-t" id="qnT">📝 Быстрая запись</div>
+    <textarea class="m-inp" id="qnText" style="min-height:70px;resize:vertical" placeholder="Текст..."></textarea>
+    <div style="display:flex;gap:6px;margin-bottom:9px">
+      <select class="m-sel" id="qnProj" style="flex:1;margin-bottom:0"><option>🚢 Flying Dutchman</option><option>💰 Финансы NL</option><option>🎰 Академия</option><option>🏥 Health</option><option>📋 Personal</option></select>
+      <select class="m-sel" id="qnType" style="flex:1;margin-bottom:0"><option>chat</option><option>idea</option><option>task</option><option>doc</option><option>fin</option><option>proj</option></select>
+    </div>
+    <div class="m-btns"><button class="mbc" onclick="closeOv('qnModal')">Отмена</button><button class="mbp" onclick="saveQN()">Записать</button></div>
+  </div>
+</div>
+
+<!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+<div class="topbar layer">
+  <div class="tb-left">
+    <div class="livdot"></div>
+    <span class="anchor">⚓</span>
+    <div class="datetime">
+      <div class="tb-time" id="tbTime">18:13</div>
+      <div class="tb-date" id="tbDate">Среда, 11 марта 2026</div>
+    </div>
+    <div class="tb-weather" id="wxBtn" onclick="getWeather()">
+      <span id="wxIco">🌤</span> <span id="wxTmp">8°C</span> · <span id="wxCity">Амстердам</span>
+    </div>
+    <div class="tool-group">
+      <div class="tool-icon" onclick="toast('🧮 Калькулятор (заглушка)')">🧮</div>
+      <div class="tool-icon" onclick="toast('📅 Календарь (заглушка)')">📅</div>
+      <div class="tool-icon" onclick="toast('⏰ Напоминания (заглушка)')">⏰</div>
+      <div class="tool-icon" onclick="toast('⚡ Быстрые команды (заглушка)')">⚡</div>
+    </div>
+  </div>
+  <div class="tb-center">
+    <div class="mode-indicator" id="currentMode">Судовой журнал</div>
+    <div class="status-string" id="statusString">⚓ 2 задачи</div>
+  </div>
+  <div class="tb-right">
+    <div class="comm-group">
+      <div class="comm-icon" onclick="openExternal('https://www.apple.com/siri/')" title="Siri">🍎</div>
+      <div class="comm-icon" onclick="openExternal('https://web.whatsapp.com')" title="WhatsApp">💬<span class="tbadge">1</span></div>
+      <div class="comm-icon" onclick="openExternal('https://web.telegram.org')" title="Telegram">✈️<span class="tbadge">3</span></div>
+      <div class="comm-icon" onclick="toast('📞 Звонок (заглушка)')" title="Телефон">📞</div>
+    </div>
+    <div class="ai-group">
+      <div class="comm-icon" onclick="openExternal('https://chat.openai.com')" title="ChatGPT">🤖</div>
+      <div class="comm-icon" onclick="openExternal('https://claude.ai')" title="Claude">🌀</div>
+      <div class="comm-icon" onclick="openExternal('https://chat.deepseek.com')" title="DeepSeek">🧠</div>
+      <div class="comm-icon" onclick="openExternal('https://grok.x.ai')" title="Grok">🌌</div>
+      <div class="comm-icon" onclick="openExternal('https://www.perplexity.ai')" title="Perplexity">🔍</div>
+    </div>
+  </div>
+</div>
+
+<!-- ОСНОВНАЯ 3-КОЛОНКА -->
+<div class="body3 layer">
+
+  <!-- ЛЕВАЯ ПАНЕЛЬ (MEDIA) -->
+  <div class="panel left-panel">
+    <div class="panel-hdr">
+      <span class="ph-t">Media</span>
+      <div class="ph-live"><div class="livdot" style="width:4px;height:4px"></div>Live</div>
+    </div>
+    <div class="pscroll" id="mediaList">
+      <div class="media-row" onclick="showMediaPreview('YouTube','Новое видео')"><div class="mi mi-yt">▶</div><div class="m-info"><div class="m-nm">YouTube</div><div class="m-ms">+47 просмотров</div></div><div class="m-bdg">21</div></div>
+      <div class="media-row" onclick="showMediaPreview('Gmail','Belastingdienst')"><div class="mi mi-gm">✉</div><div class="m-info"><div class="m-nm">Gmail</div><div class="m-ms">Belastingdienst: Re: IB</div></div><div class="m-bdg">13</div></div>
+      <div class="media-row" onclick="showMediaPreview('Telegram','Дедлайн KVK!')"><div class="mi mi-tg">✈️</div><div class="m-info"><div class="m-nm">Telegram</div><div class="m-ms">Анжелика: Дедлайн KVK!</div></div><div class="m-bdg">142</div></div>
+      <div class="media-row" onclick="showMediaPreview('TikTok','3 лайка')"><div class="mi mi-tt">TT</div><div class="m-info"><div class="m-nm">TikTok</div><div class="m-ms">3 лайка · 1 коммент</div></div><div class="m-bdg" style="background:rgba(200,149,42,.8)">6</div></div>
+      <div class="media-row" onclick="showMediaPreview('WhatsApp','Мама: Как дела?')"><div class="mi mi-wa">💬</div><div class="m-info"><div class="m-nm">WhatsApp</div><div class="m-ms">Мама: Как дела?</div></div><div class="m-bdg" style="background:rgba(200,149,42,.8)">5</div></div>
+      <div class="media-row" onclick="showMediaPreview('Facebook','1 комментарий')"><div class="mi mi-fb">f</div><div class="m-info"><div class="m-nm">Facebook</div><div class="m-ms">1 комментарий</div></div></div>
+      <div class="media-row" onclick="showMediaPreview('X','5 упоминаний')"><div class="mi mi-x">𝕏</div><div class="m-info"><div class="m-nm">X / Twitter</div><div class="m-ms">5 упоминаний</div></div><div class="m-bdg">5</div></div>
+      <div class="media-row" onclick="showMediaPreview('Новости','Геополитика')"><div class="mi" style="background:#ff6b35">📰</div><div class="m-info"><div class="m-nm">Новости</div><div class="m-ms">Геополитика · Март 2026</div></div><div class="m-bdg" style="background:rgba(200,149,42,.8)">9</div></div>
+    </div>
+    <div class="media-preview" id="mediaPreview">
+      <div class="mp-title">📺 MEDIA PREVIEW</div>
+      <div class="mp-content" id="mediaPreviewContent">Выберите источник</div>
+    </div>
+    <div class="gs-row">
+      <input class="gs-inp" id="gsInp" placeholder="🔍 Google поиск..." onkeydown="if(event.key==='Enter')doSearch()" />
+    </div>
+  </div>
+
+  <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ (с двумя режимами) -->
+  <div class="panel center-panel" style="position:relative">
+    <div class="gc gc-tl"></div><div class="gc gc-tr"></div>
+    <div class="gc gc-bl"></div><div class="gc gc-br"></div>
+
+    <!-- Режим 1: Полноэкранный журнал -->
+    <div id="center-full-journal" style="display:flex; flex-direction:column; overflow:hidden;">
+      <div class="jhead">
+        <div class="jh-btns"><div class="jbtn" onclick="openOv('letterModal')">✉️</div></div>
+        <div style="text-align:center">
+          <div class="jh-title">Судовой Журнал</div>
+          <div class="jh-sub">Ship's Journal</div>
+        </div>
+        <div class="jh-btns">
+          <div class="jbtn" onclick="expJ()">📤</div>
+          <div class="jbtn add" onclick="focusNote()">+</div>
+        </div>
+      </div>
+      <div class="timeline" id="timeline-full"></div>
+      <div class="addbar">
+        <select class="type-sel" id="typeSel">
+          <option value="chat">💬</option>
+          <option value="idea">💡</option>
+          <option value="task">✅</option>
+          <option value="doc">📄</option>
+          <option value="msg">📨</option>
+          <option value="fin">💰</option>
+          <option value="proj">🚢</option>
+        </select>
+        <input class="note-inp" id="noteInp" placeholder="Запись в журнал..." onkeydown="if(event.key==='Enter')addEntry()" />
+        <button class="note-add" onclick="addEntry()">+</button>
+      </div>
+    </div>
+
+    <!-- Режим 2: Split (30% журнал + 70% проект) -->
+    <div id="center-split" style="display:none; flex-direction:row; overflow:hidden;">
+      <div class="split-left">
+        <div class="mini-journal-header">📓 Судовой журнал</div>
+        <div class="mini-timeline" id="mini-timeline"></div>
+      </div>
+      <div class="split-right" id="project-right">
+        <!-- будет заполняться через JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ПРАВАЯ ПАНЕЛЬ (Управление) -->
+  <div class="panel right-panel">
+    <div class="panel-hdr">
+      <span class="ph-t">Управление</span>
+      <div class="ai-mini">
+        <div class="ai-mini-icon" onclick="openExternal('https://chat.openai.com')" title="ChatGPT">🤖</div>
+        <div class="ai-mini-icon" onclick="openExternal('https://claude.ai')" title="Claude">🌀</div>
+        <div class="ai-mini-icon" onclick="openExternal('https://chat.deepseek.com')" title="DeepSeek">🧠</div>
+        <div class="ai-mini-icon" onclick="openExternal('https://grok.x.ai')" title="Grok">🌌</div>
+        <div class="ai-mini-icon" onclick="openExternal('https://www.perplexity.ai')" title="Perplexity">🔍</div>
+      </div>
+    </div>
+
+    <!-- Document View Panel -->
+    <div class="doc-view" id="docView">
+      <div class="dv-title">📄 DOCUMENT VIEW</div>
+      <div class="dv-fields">
+        <div class="dv-field"><span class="dv-label">Название:</span><span class="dv-value" id="dvName">—</span></div>
+        <div class="dv-field"><span class="dv-label">Тип:</span><span class="dv-value" id="dvType">—</span></div>
+        <div class="dv-field"><span class="dv-label">Дата:</span><span class="dv-value" id="dvDate">—</span></div>
+      </div>
+      <div class="dv-preview" id="dvPreview">Выберите документ в журнале</div>
+      <div class="dv-btns">
+        <button class="dv-btn" onclick="toast('Показать в журнале')">📓 Показать</button>
+        <button class="dv-btn" onclick="toast('Добавить в проект')">📌 В проект</button>
+        <button class="dv-btn" onclick="toast('Отправить в архив')">📦 В архив</button>
+        <button class="dv-btn" onclick="toast('Удалить')">🗑️ Удалить</button>
+      </div>
+    </div>
+
+    <!-- AI секция -->
+    <div class="ai-sec">
+      <div class="ai-head">
+        <div class="ai-av">А</div>
+        <div>
+          <div class="ai-nm">Анжелика</div>
+          <div class="ai-st"><div class="livdot" style="width:4px;height:4px"></div>Live</div>
+        </div>
+        <span style="margin-left:auto;font-size:8px;color:var(--t3)" id="engLbl">GEMINI</span>
+      </div>
+      <div class="eng-row">
+        <button class="eb on" id="ae-gem" onclick="setEng('gem')">🟢 Gemini</button>
+        <button class="eb" id="ae-gpt" onclick="setEng('gpt')">⚪ GPT</button>
+      </div>
+      <div class="msgs" id="aiMsgs">
+        <div class="msg-ai">⚓ На борту, Капитан! Подключи ключ ⚙️ — и полностью готова.</div>
+      </div>
+      <div class="ai-chips">
+        <button class="qc" onclick="qp('Что срочно сегодня?')">⚡ Срочно</button>
+        <button class="qc" onclick="qp('Статус KVK?')">🏢 KVK</button>
+        <button class="qc" onclick="qp('Следующий шаг FD?')">🚢 FD</button>
+      </div>
+      <div class="ai-inp-row">
+        <textarea class="ai-ta" id="aiTa" rows="2" placeholder="Сообщение Анжелике..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAI()}"></textarea>
+        <button class="ai-snd" id="aiSnd" onclick="sendAI()">➤</button>
+      </div>
+    </div>
+
+    <!-- Sketch -->
+    <div class="sk-sec">
+      <div class="sk-head">
+        <div class="sk-t">✏️ Free Writing Canvas</div>
+        <div class="sk-btns">
+          <button class="sk-btn" onclick="clearSk()">🗑️ Очистить</button>
+          <button class="sk-btn" onclick="saveSk()">💾</button>
+        </div>
+      </div>
+      <canvas id="skCanvas"></canvas>
+      <div class="sk-colors">
+        <div class="sco on" style="background:var(--neon)" onclick="setSkColor(this,'#00d4ff')"></div>
+        <div class="sco" style="background:#fbbf24" onclick="setSkColor(this,'#fbbf24')"></div>
+        <div class="sco" style="background:#f87171" onclick="setSkColor(this,'#f87171')"></div>
+        <div class="sco" style="background:#fff" onclick="setSkColor(this,'#ffffff')"></div>
+        <div class="sco" style="background:#a78bfa" onclick="setSkColor(this,'#a78bfa')"></div>
+        <input type="range" min="1" max="12" value="2" id="skSz" />
+      </div>
+    </div>
+
+    <!-- Mini analytics -->
+    <div class="an-sec">
+      <div class="an-card">
+        <div class="an-t">Дедлайны</div>
+        <div class="an-stats">
+          <div><div class="as-n" style="color:#f87171">2</div><div class="as-l">Срочных</div></div>
+          <div><div class="as-n" id="daysLeft">—</div><div class="as-l">До KVK</div></div>
+          <div><div class="as-n" style="color:#34d399">3</div><div class="as-l">Проекты</div></div>
+        </div>
+      </div>
+      <div class="an-card">
+        <div class="an-t">Активность</div>
+        <div class="mini-bars" id="miniBars">
+          <div class="mb" style="height:40%"></div><div class="mb" style="height:65%"></div>
+          <div class="mb" style="height:30%"></div><div class="mb" style="height:80%"></div>
+          <div class="mb" style="height:55%"></div><div class="mb" style="height:90%"></div>
+          <div class="mb" style="height:70%"></div>
+        </div>
+        <div style="font-size:8px;color:var(--t3);margin-top:3px">Записей за неделю</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- НИЖНИЙ DOCK -->
+<div class="botnav layer">
+  <div class="main-tabs">
+    <div class="nt on" id="nt-jour" onclick="switchTab('jour')"><span class="nt-i">📓</span><span class="nt-l">Журнал</span></div>
+    <div class="nt" id="nt-prj"  onclick="switchTab('prj')"><span class="nt-i">🗂️</span><span class="nt-l">Проекты</span></div>
+    <div class="nt" id="nt-arch" onclick="switchTab('arch')"><span class="nt-i">📚</span><span class="nt-l">Архив</span></div>
+    <div class="nt" id="nt-media"onclick="switchTab('media')"><span class="nt-i">📺</span><span class="nt-l">Медиа</span></div>
+    <div class="nt" id="nt-fin"  onclick="switchTab('fin')"><span class="nt-i">💰</span><span class="nt-l">Финансы</span></div>
+  </div>
+  <div class="quick-actions">
+    <div class="qact" onclick="openQN('📝 Быстрая записка','chat')"><span>📝</span>Записка</div>
+    <div class="qact" onclick="qaPhoto()"><span>📷</span>Фото</div>
+    <div class="qact" onclick="qaScan()"><span>🔲</span>Скан</div>
+    <div class="qact" onclick="qaFile()"><span>📎</span>Файл</div>
+    <div class="qact" onclick="toast('✅ Задача (заглушка)')"><span>✅</span>Задача</div>
+    <div class="qact" onclick="toast('📅 Событие (заглушка)')"><span>📅</span>Событие</div>
+    <div class="qact" onclick="toast('🎤 Голос (заглушка)')"><span>🎤</span>Голос</div>
+  </div>
+  <div class="cmd-row">
+    <span class="cmd-p">❯</span>
+    <input class="cmd-i" id="cmdIn" placeholder="journal · projects · letter · note …" onkeydown="if(event.key==='Enter')runCmd()" />
+    <button class="cmd-mic" onclick="toast('🎙 Голос — в разработке')">🎙</button>
+  </div>
+</div>
+<!-- PART 2 END --><!-- PART 3 START -->
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// ПОЛНЫЙ СКРИПТ (часть 1: контекст, данные, базовые функции)
+// ════════════════════════════════════════════════════════════════════════════
+
+const CTX = `Ты — Анжелика, AI Владимира Чернова (Weesp, Нидерланды).
+Умная, кратко, по-русски, женский род.
+ПРОЕКТЫ: Flying Dutchman(медиа,40%), Финансы NL(KVK 01.04, IB 15.03, декларация 30.04), Roulette Academy(25%), Health, Visas.
+Сегодня: ${new Date().toLocaleDateString('ru-RU')}`;
+
+let gemK = localStorage.getItem('gk') || '';
+let gptK = localStorage.getItem('ok') || '';
+let gptM = localStorage.getItem('gm') || 'gpt-4o';
+let eng = localStorage.getItem('eng') || 'gem';
+let aiHist = [];
+let curLet = {};
+
+const TYPES = {
+  chat: { lbl: '💬 Чат', cls: 'tc-chat', dot: 'dt-chat' },
+  idea: { lbl: '💡 Идея', cls: 'tc-idea', dot: 'dt-idea' },
+  doc:  { lbl: '📄 Документ', cls: 'tc-doc', dot: 'dt-doc' },
+  task: { lbl: '✅ Задача', cls: 'tc-task', dot: 'dt-task' },
+  msg:  { lbl: '📨 Сообщение', cls: 'tc-msg', dot: 'dt-msg' },
+  fin:  { lbl: '💰 Финансы', cls: 'tc-fin', dot: 'dt-fin' },
+  proj: { lbl: '🚢 Проект', cls: 'tc-proj', dot: 'dt-proj' },
+};
+
+// Данные журнала
+const DEF_J = [
+  { id: 'j1', dt: '2026-03-10T12:00', type: 'chat', proj: '🚢 FD', txt: 'Command Center v6 — запускаем. Это работает!' },
+  { id: 'j2', dt: '2026-03-10T08:05', type: 'fin', proj: '💰 Финансы', txt: 'Дедлайн Belastingdienst 15.03 — ожидаем ответ' },
+  { id: 'j3', dt: '2026-03-09T14:30', type: 'task', proj: '🏢 KVK', txt: 'Подготовить документы для закрытия KVK до 01.04' },
+  { id: 'j4', dt: '2026-03-08T11:00', type: 'idea', proj: '🚢 FD', txt: 'Рулетка как философская модель под неопределённостью' },
+  { id: 'j5', dt: '2026-03-07T09:00', type: 'doc', proj: '🏥 Health', txt: 'Анализы крови получены. Всё в норме.' },
+];
+let jData = JSON.parse(localStorage.getItem('fd_j') || 'null') || DEF_J;
+function saveJ() { localStorage.setItem('fd_j', JSON.stringify(jData)); }
+
+// Моковые данные для финансов
+const financeData = {
+  personal: [
+    { name: 'Личный бюджет 2026', status: 'активен', deadline: '31.12.2026', type: 'plan' },
+    { name: 'Кредитная карта', status: 'оплачено', deadline: '05.04.2026', type: 'payment' },
+  ],
+  debts: [
+    { name: 'Долг Ивану', status: 'ожидает', deadline: '01.05.2026', type: 'debt' },
+  ],
+  belasting: {
+    incoming: ['Письмо о возврате налога (28.02)', 'Уведомление IB (15.03)'],
+    outgoing: ['Запрос на отсрочку (10.03)'],
+    aanslagen: ['Предварительный расчёт 2025', 'Окончательный расчёт 2024'],
+    attachments: ['Скан IB-формы', 'Декларация 2025.pdf'],
+    status: 'ожидает ответа',
+    deadline: '15.03.2026',
+  },
+  gemeente: [
+    { name: 'Запрос на пособие', status: 'рассматривается', deadline: '20.04.2026' },
+  ],
+  zuidweg: [
+    { name: 'Договор о сотрудничестве', status: 'подписан', deadline: '-' },
+  ],
+  abn: [
+    { name: 'Выписка за февраль', status: 'доступна', deadline: '-' },
+  ],
+  other: [
+    { name: 'Письмо от страховой', status: 'новое', deadline: '25.03.2026' },
+  ],
+};
+
+window.onload = () => {
+  tick(); setInterval(tick, 1000);
+  renderFullJournal(); renderMiniJournal();
+  calcKVK();
+  updateEngUI();
+  initCanvas();
+  getWeather();
+  initFinanceTabs(); // будет определена позже, но вызов safe
+  switchTab('jour');
+};
+
+// Время
+const DAYS_RU = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+const MONTHS_RU = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+function tick() {
+  const n = new Date();
+  const ams = { timeZone: 'Europe/Amsterdam' };
+  document.getElementById('tbTime').textContent = n.toLocaleTimeString('ru-RU', { ...ams, hour12: false, hour: '2-digit', minute: '2-digit' });
+  const nd = new Date(n.toLocaleString('en-US', ams));
+  document.getElementById('tbDate').textContent = DAYS_RU[nd.getDay()] + ', ' + nd.getDate() + ' ' + MONTHS_RU[nd.getMonth()] + ' ' + nd.getFullYear();
+}
+function calcKVK() {
+  const el = document.getElementById('daysLeft'); if (!el) return;
+  const diff = Math.ceil((new Date('2026-04-01') - new Date()) / (1000*60*60*24));
+  el.textContent = Math.max(0,diff)+'д';
+  el.style.color = diff<15?'#f87171': diff<30?'#f59e0b':'var(--neon)';
+}
+async function getWeather(){
+  try{
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true&timezone=auto`);
+      const d=await r.json();
+      const t=Math.round(d.current_weather?.temperature??8);
+      const wc=d.current_weather?.weathercode??1;
+      const WMAP={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',61:'🌧',71:'🌨',80:'🌦',95:'⛈'};
+      document.getElementById('wxTmp').textContent=t+'°C';
+      document.getElementById('wxIco').textContent=WMAP[wc]||'🌡';
+      const cr=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+      const cd=await cr.json();
+      document.getElementById('wxCity').textContent=cd.address?.city||cd.address?.town||'Амстердам';
+    },()=>{});
+  }catch(e){}
+}
+
+// Переключение вкладок
+let currentMainTab = 'jour';
+function switchTab(tab) {
+  document.querySelectorAll('.main-tabs .nt').forEach(el => el.classList.remove('on'));
+  document.getElementById('nt-'+tab).classList.add('on');
+  currentMainTab = tab;
+  updateCenterMode();
+  updateModeIndicator();
+}
+function updateModeIndicator() {
+  const modeEl = document.getElementById('currentMode');
+  const statusEl = document.getElementById('statusString');
+  if (currentMainTab === 'jour') {
+    modeEl.textContent = 'Судовой журнал';
+    statusEl.textContent = '⚓ все записи';
+  } else if (currentMainTab === 'fin') {
+    modeEl.textContent = 'Финансы • Управление';
+    statusEl.textContent = '💰 7 разделов';
+  } else {
+    modeEl.textContent = currentMainTab === 'prj' ? 'Проекты' : currentMainTab === 'arch' ? 'Архив' : 'Медиа';
+    statusEl.textContent = '⏳ в разработке';
+  }
+}
+function updateCenterMode() {
+  const full = document.getElementById('center-full-journal');
+  const split = document.getElementById('center-split');
+  if (currentMainTab === 'jour') {
+    full.style.display = 'flex';
+    split.style.display = 'none';
+  } else {
+    full.style.display = 'none';
+    split.style.display = 'flex';
+    loadProjectContent(currentMainTab);
+  }
+}
+
+// Загрузка контента в правую часть split
+function loadProjectContent(tab) {
+  const rightDiv = document.getElementById('project-right');
+  if (tab === 'fin') {
+    rightDiv.innerHTML = getFinanceHTML();
+    initFinanceTabs();
+  } else {
+    rightDiv.innerHTML = `<div style="color:var(--t3);padding:20px;text-align:center;">Раздел "${tab}" в разработке. Здесь будет рабочая область.</div>`;
+  }
+}
+
+// Финансовый интерфейс
+function getFinanceHTML() {
+  return `
+    <div class="finance-tabs" id="financeTabs">
+      <div class="fin-tab active" data-fin="personal">Личные финансы</div>
+      <div class="fin-tab" data-fin="debts">Долги</div>
+      <div class="fin-tab" data-fin="belasting">Belastingdienst</div>
+      <div class="fin-tab" data-fin="gemeente">Gemeente Amsterdam</div>
+      <div class="fin-tab" data-fin="zuidweg">Zuidweg en Partners</div>
+      <div class="fin-tab" data-fin="abn">ABN AMRO</div>
+      <div class="fin-tab" data-fin="other">Другие</div>
+    </div>
+    <div class="fin-content">
+      ${renderFinanceSection('personal')}
+      ${renderFinanceSection('debts')}
+      ${renderFinanceSection('belasting')}
+      ${renderFinanceSection('gemeente')}
+      ${renderFinanceSection('zuidweg')}
+      ${renderFinanceSection('abn')}
+      ${renderFinanceSection('other')}
+    </div>
+  `;
+}
+function renderFinanceSection(section) {
+  const data = financeData[section];
+  if (section === 'belasting') {
+    return `
+      <div id="fin-${section}" class="fin-section ${section==='personal'?'active':''}">
+        <div class="fin-header">
+          <h4>Belastingdienst</h4>
+          <div class="fin-actions">
+            <button class="fin-action-btn" onclick="toast('Добавить документ')">+ Документ</button>
+            <button class="fin-action-btn" onclick="openOv('letterModal');document.getElementById('l-org').value='Belastingdienst'">✉️ Письмо</button>
+          </div>
+        </div>
+        <div class="bd-blocks">
+          <div class="bd-block">
+            <div class="bd-block-title">📥 Входящие</div>
+            ${data.incoming.map(item => `<div class="bd-block-item">${item}</div>`).join('')}
+          </div>
+          <div class="bd-block">
+            <div class="bd-block-title">📤 Исходящие</div>
+            ${data.outgoing.map(item => `<div class="bd-block-item">${item}</div>`).join('')}
+          </div>
+          <div class="bd-block">
+            <div class="bd-block-title">📄 Aanslagen</div>
+            ${data.aanslagen.map(item => `<div class="bd-block-item">${item}</div>`).join('')}
+          </div>
+          <div class="bd-block">
+            <div class="bd-block-title">📎 Приложения</div>
+            ${data.attachments.map(item => `<div class="bd-block-item">${item}</div>`).join('')}
+          </div>
+        </div>
+        <div style="margin-top:12px; background:rgba(0,0,0,0.2); border-radius:8px; padding:8px;">
+          <div style="display:flex; justify-content:space-between;">
+            <span>Статус ответа: <span style="color:var(--neon)">${data.status}</span></span>
+            <span>Дедлайн ответа: <span style="color:#f87171">${data.deadline}</span></span>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    return `
+      <div id="fin-${section}" class="fin-section ${section==='personal'?'active':''}">
+        <div class="fin-header">
+          <h4>${getSectionTitle(section)}</h4>
+          <div class="fin-actions">
+            <button class="fin-action-btn" onclick="toast('Добавить документ')">+ Документ</button>
+            <button class="fin-action-btn" onclick="toast('Подготовить письмо')">✉️ Письмо</button>
+          </div>
+        </div>
+        <div class="doc-list">
+          ${data.map(doc => `
+            <div class="doc-item">
+              <div class="doc-info">
+                <div class="doc-name">${doc.name}</div>
+                <div class="doc-meta">
+                  <span class="doc-status">${doc.status}</span>
+                  <span class="doc-deadline">⏰ ${doc.deadline}</span>
+                </div>
+              </div>
+              <div class="doc-actions">
+                <button class="doc-btn" onclick="toast('Открыть')">Открыть</button>
+                <button class="doc-btn" onclick="toast('Добавить')">+</button>
+                <button class="doc-btn" onclick="toast('Письмо')">✉️</button>
+                <button class="doc-btn" onclick="toast('В журнал')">📓</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+}
+function getSectionTitle(s) {
+  return {
+    personal:'Личные финансы', debts:'Долги', gemeente:'Gemeente Amsterdam',
+    zuidweg:'Zuidweg en Partners', abn:'ABN AMRO', other:'Другие организации'
+  }[s] || s;
+}
+function initFinanceTabs() {
+  const tabs = document.querySelectorAll('.fin-tab');
+  if (!tabs.length) return;
+  tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const section = tab.dataset.fin;
+      document.querySelectorAll('.fin-section').forEach(sec => sec.classList.remove('active'));
+      const target = document.getElementById('fin-'+section);
+      if (target) target.classList.add('active');
+    });
+  });
+}
+
+// Рендер журнала
+function renderFullJournal() {
+  const tl = document.getElementById('timeline-full');
+  if (!tl) return;
+  tl.innerHTML = '';
+  if (!jData.length) { tl.innerHTML = '<div style="text-align:center;padding:28px 0;color:var(--t3);font-size:12px">Журнал пуст. Добавь первую запись ↓</div>'; return; }
+  jData.forEach(e => {
+    const tp = TYPES[e.type] || TYPES.chat;
+    const dt = new Date(e.dt);
+    const ds = String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0');
+    const ts = String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+    const el = document.createElement('div'); el.className = 'te';
+    el.innerHTML = `
+      <div class="te-date"><span class="te-d">${ds}</span><span class="te-t">${ts}</span></div>
+      <div class="te-dot ${tp.dot}"></div>
+      <div class="te-body" onclick='showDocumentInView(${JSON.stringify(e).replace(/'/g, "&apos;")})'>
+        <div class="te-type ${tp.cls}">${tp.lbl}</div>
+        <div class="te-title">${e.txt}</div>
+        ${e.proj ? `<div class="te-proj-tag" style="font-size:8.5px;color:var(--t3);margin-top:2px">${e.proj}</div>` : ''}
+      </div>
+      <button class="te-del" onclick="delJ('${e.id}')">✕</button>
+    `;
+    tl.appendChild(el);
+  });
+}
+function renderMiniJournal() {
+  const mini = document.getElementById('mini-timeline');
+  if (!mini) return;
+  mini.innerHTML = '';
+  const lastEntries = jData.slice(0, 10);
+  lastEntries.forEach(e => {
+    const dt = new Date(e.dt);
+    const ds = String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0');
+    const el = document.createElement('div'); el.className = 'mini-entry';
+    el.innerHTML = `<span class="mini-entry-date">${ds}</span><span class="mini-entry-text">${e.txt}</span>`;
+    mini.appendChild(el);
+  });
+}
+function addEntry() {
+  const inp = document.getElementById('noteInp');
+  const txt = inp.value.trim(); if (!txt) return;
+  const type = document.getElementById('typeSel').value;
+  jData.unshift({ id:'j'+Date.now(), dt: new Date().toISOString().slice(0,16), type, proj:'📋 Personal', txt });
+  saveJ(); renderFullJournal(); renderMiniJournal(); inp.value = '';
+  calcKVK(); toast('📓 Записано');
+}
+function delJ(id) { jData = jData.filter(e=>e.id!==id); saveJ(); renderFullJournal(); renderMiniJournal(); }
+function focusNote() { document.getElementById('noteInp').focus(); }
+function expJ() {
+  const b = new Blob([JSON.stringify(jData,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b);
+  a.download = 'journal_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+}
+
+// Quick note
+function openQN(title, type) {
+  document.getElementById('qnT').textContent = title;
+  document.getElementById('qnType').value = type || 'chat';
+  document.getElementById('qnText').value = '';
+  openOv('qnModal');
+  setTimeout(()=>document.getElementById('qnText').focus(),120);
+}
+function saveQN() {
+  const t = document.getElementById('qnText').value.trim(); if(!t) return;
+  const type = document.getElementById('qnType').value;
+  const proj = document.getElementById('qnProj').value;
+  jData.unshift({ id:'j'+Date.now(), dt: new Date().toISOString().slice(0,16), type, proj, txt:t });
+  saveJ(); renderFullJournal(); renderMiniJournal(); closeOv('qnModal'); toast('📓 Записано');
+}
+
+// Actions
+function qaPhoto() {
+  const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.capture='camera';
+  i.onchange = e => { const f = e.target.files[0]; if(f) { jData.unshift({ id:'j'+Date.now(), dt: new Date().toISOString().slice(0,16), type:'doc', proj:'📋 Personal', txt:'📷 Фото: '+f.name }); saveJ(); renderFullJournal(); renderMiniJournal(); toast('📷 Фото добавлено'); } };
+  i.click();
+}
+function qaScan() {
+  const i = document.createElement('input'); i.type='file'; i.accept='image/*,.pdf';
+  i.onchange = e => { const f = e.target.files[0]; if(f) { jData.unshift({ id:'j'+Date.now(), dt: new Date().toISOString().slice(0,16), type:'doc', proj:'📋 Personal', txt:'📄 Скан: '+f.name }); saveJ(); renderFullJournal(); renderMiniJournal(); toast('📄 Скан добавлен'); } };
+  i.click();
+}
+function qaFile() {
+  const i = document.createElement('input'); i.type='file';
+  i.onchange = e => { const f = e.target.files[0]; if(f) { jData.unshift({ id:'j'+Date.now(), dt: new Date().toISOString().slice(0,16), type:'doc', proj:'📋 Personal', txt:'📎 Файл: '+f.name }); saveJ(); renderFullJournal(); renderMiniJournal(); toast('📎 Файл добавлен'); } };
+  i.click();
+}
+// PART 3 END --><!-- PART 4 START -->
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// ПОЛНЫЙ СКРИПТ (часть 2: AI, письма, ключи, канвас)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Canvas
+let skCtx, skDraw = false, skColor = '#00d4ff', skSz = 2;
+function initCanvas() {
+  const c = document.getElementById('skCanvas');
+  if (!c) return;
+  function resize() { c.width = c.offsetWidth; c.height = c.offsetHeight || 100; }
+  resize(); new ResizeObserver(resize).observe(c);
+  skCtx = c.getContext('2d'); skCtx.lineCap = 'round'; skCtx.lineJoin = 'round';
+  const pos = (e) => { const r = c.getBoundingClientRect(); const src = e.touches ? e.touches[0] : e; return [src.clientX - r.left, src.clientY - r.top]; };
+  c.onmousedown = c.ontouchstart = (e) => { e.preventDefault(); skDraw = true; skCtx.beginPath(); const [x, y] = pos(e); skCtx.moveTo(x, y); };
+  c.onmousemove = c.ontouchmove = (e) => { e.preventDefault(); if (!skDraw) return; const [x, y] = pos(e); skCtx.lineTo(x, y); skCtx.strokeStyle = skColor; skCtx.lineWidth = skSz; skCtx.stroke(); skCtx.beginPath(); skCtx.moveTo(x, y); };
+  c.onmouseup = c.ontouchend = () => { skDraw = false; };
+}
+function clearSk() { if (skCtx) { const c = document.getElementById('skCanvas'); skCtx.clearRect(0, 0, c.width, c.height); } }
+function setSkColor(el, c) { skColor = c; document.querySelectorAll('.sco').forEach(x => x.classList.remove('on')); el.classList.add('on'); }
+document.getElementById('skSz')?.addEventListener('input', e => skSz = +e.target.value);
+function saveSk() { jData.unshift({ id: 'j' + Date.now(), dt: new Date().toISOString().slice(0, 16), type: 'doc', proj: '📋 Personal', txt: '✏️ Рисунок Pencil' }); saveJ(); renderFullJournal(); renderMiniJournal(); toast('✏️ Рисунок сохранён в журнал'); }
+
+// AI
+function setEng(e) {
+  eng = e; localStorage.setItem('eng', e); updateEngUI(); aiHist = [];
+  addAIMsg('ai', `Переключилась на ${e === 'gem' ? 'Gemini' : 'ChatGPT'}.`);
+}
+function updateEngUI() {
+  ['gem', 'gpt'].forEach(x => { document.getElementById('ae-' + x)?.classList.toggle('on', eng === x); });
+  const el = document.getElementById('engLbl'); if (el) el.textContent = eng === 'gem' ? 'GEMINI' : 'GPT';
+}
+function addAIMsg(who, txt) {
+  const c = document.getElementById('aiMsgs');
+  const d = document.createElement('div'); d.className = who === 'ai' ? 'msg-ai' : 'msg-u';
+  d.innerHTML = txt.replace(/\n/g, '<br>'); c.appendChild(d); c.scrollTop = c.scrollHeight;
+}
+function showThink() { const c = document.getElementById('aiMsgs'); const d = document.createElement('div'); d.className = 'msg-ai'; d.id = 'think'; d.innerHTML = '<div class="think-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div>'; c.appendChild(d); c.scrollTop = c.scrollHeight; }
+function hideThink() { document.getElementById('think')?.remove(); }
+function qp(t) { document.getElementById('aiTa').value = t; sendAI(); }
+
+async function sendAI() {
+  const inp = document.getElementById('aiTa');
+  const t = inp.value.trim(); if (!t) return;
+  const k = eng === 'gem' ? gemK : gptK; if (!k) { openOv('apiModal'); return; }
+  inp.value = ''; document.getElementById('aiSnd').disabled = true;
+  addAIMsg('user', t); aiHist.push({ role: 'user', parts: [{ text: t }] }); showThink();
+  try {
+    let rep = '';
+    if (eng === 'gem') {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ system_instruction: { parts: [{ text: CTX }] }, contents: aiHist, generationConfig: { temperature: .7, maxOutputTokens: 600 } })
+      });
+      const d = await r.json(); if (d.error) { hideThink(); addAIMsg('ai', '⚠️ ' + d.error.message); aiHist.pop(); document.getElementById('aiSnd').disabled = false; return; }
+      rep = d.candidates?.[0]?.content?.parts?.[0]?.text || '—';
+    } else {
+      const msgs = [{ role: 'system', content: CTX }];
+      aiHist.forEach(m => msgs.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.parts[0].text }));
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k },
+        body: JSON.stringify({ model: gptM, messages: msgs, max_tokens: 600, temperature: .7 })
+      });
+      const d = await r.json(); if (d.error) { hideThink(); addAIMsg('ai', '⚠️ ' + d.error.message); aiHist.pop(); document.getElementById('aiSnd').disabled = false; return; }
+      rep = d.choices?.[0]?.message?.content || '—';
+    }
+    aiHist.push({ role: 'model', parts: [{ text: rep }] }); hideThink(); addAIMsg('ai', rep);
+  } catch (e) { hideThink(); addAIMsg('ai', '⚠️ Ошибка соединения.'); }
+  document.getElementById('aiSnd').disabled = false;
+}
+
+// Letter
+async function genLetter() {
+  const org = document.getElementById('l-org').value.trim();
+  const lang = document.getElementById('l-lang').value;
+  const brief = document.getElementById('l-brief').value.trim();
+  if (!brief) { toast('Опиши суть письма!'); return; }
+  const k = eng === 'gem' ? gemK : gptK; if (!k) { closeOv('letterModal'); openOv('apiModal'); return; }
+  document.getElementById('l-load').style.display = 'block'; document.getElementById('l-out').style.display = 'none';
+  const lmap = { nl: 'formal Dutch (Nederlands)', en: 'formal English', ru: 'официальный русский' };
+  const prompt = `Write a ${lmap[lang]} letter to ${org}. Date: ${new Date().toLocaleDateString('nl-NL')}. Purpose: ${brief}. From: Vladimir Chernov, Weesp. Formal structure only. End with suggested attachments "📎 Bijlagen:". ONLY the letter text.`;
+  try {
+    let rep = '';
+    if (eng === 'gem') {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: .25, maxOutputTokens: 1200 } })
+      });
+      const d = await r.json(); rep = d.candidates?.[0]?.content?.parts?.[0]?.text || 'Ошибка';
+    } else {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k },
+        body: JSON.stringify({ model: gptM, messages: [{ role: 'user', content: prompt }], max_tokens: 1200, temperature: .25 })
+      });
+      const d = await r.json(); rep = d.choices?.[0]?.message?.content || 'Ошибка';
+    }
+    document.getElementById('l-txt').textContent = rep;
+    document.getElementById('l-load').style.display = 'none'; document.getElementById('l-out').style.display = 'block';
+    curLet = { org, text: rep };
+  } catch (e) { document.getElementById('l-load').style.display = 'none'; toast('⚠️ Ошибка генерации'); }
+}
+function copyLetter() { navigator.clipboard.writeText(document.getElementById('l-txt').textContent).then(() => toast('📋 Скопировано!')); }
+function logLetter() { jData.unshift({ id: 'j' + Date.now(), dt: new Date().toISOString().slice(0, 16), type: 'doc', proj: '💰 Финансы NL', txt: `✉️ Письмо → ${curLet.org}` }); saveJ(); renderFullJournal(); renderMiniJournal(); closeOv('letterModal'); toast('📓 Записано в журнал'); }
+
+// API Keys
+let mT = 'gem';
+function switchMT(t) {
+  mT = t; document.getElementById('mp-gem').style.display = t === 'gem' ? 'block' : 'none'; document.getElementById('mp-gpt').style.display = t === 'gpt' ? 'block' : 'none';
+  ['gem', 'gpt'].forEach(x => document.getElementById('mt-' + x).classList[t === x ? 'add' : 'remove']('on'));
+}
+function saveKeys() {
+  const gv = document.getElementById('gemKey').value.trim(); const cv = document.getElementById('gptKey').value.trim();
+  if (gv) { gemK = gv; localStorage.setItem('gk', gv); } if (cv) { gptK = cv; localStorage.setItem('ok', cv); }
+  gptM = document.getElementById('gptModel').value; localStorage.setItem('gm', gptM);
+  closeOv('apiModal'); toast('✅ Ключи сохранены!'); addAIMsg('ai', '✅ Ключи активированы! Готова.');
+}
+// PART 4 END --><!-- PART 5 START -->
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// ПОЛНЫЙ СКРИПТ (часть 3: overlays, preview, команды, toast, завершение)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Overlays
+function openOv(id) { document.getElementById(id).classList.add('on'); }
+function closeOv(id) { document.getElementById(id).classList.remove('on'); }
+['apiModal', 'letterModal', 'qnModal'].forEach(id => document.getElementById(id).addEventListener('click', e => { if (e.target.id === id) closeOv(id); }));
+
+// Media Preview
+function showMediaPreview(name, detail) {
+  document.getElementById('mediaPreviewContent').innerHTML = `<b>${name}</b><br>${detail}`;
+  toast(`📺 Выбрано: ${name}`);
+}
+
+// Document View
+function showDocumentInView(entry) {
+  document.getElementById('dvName').innerText = entry.txt || '—';
+  document.getElementById('dvType').innerText = entry.type || '—';
+  document.getElementById('dvDate').innerText = entry.dt ? new Date(entry.dt).toLocaleDateString() : '—';
+  document.getElementById('dvPreview').innerText = entry.txt || 'Нет preview';
+}
+
+// Внешние ссылки
+function openExternal(url) { window.open(url, '_blank'); }
+
+// Поиск Google
+function doSearch() { const q = document.getElementById('gsInp').value.trim(); if (!q) return; window.open('https://www.google.com/search?q='+encodeURIComponent(q), '_blank'); document.getElementById('gsInp').value = ''; }
+
+// Язык (заглушка)
+function setLang(l) { ['ru','nl','en'].forEach(x => { document.getElementById('lp-'+x)?.classList[x===l?'add':'remove']('on'); }); toast(l==='ru'?'🇷🇺 Русский':l==='nl'?'🇳🇱 Nederlands':'🇬🇧 English'); }
+
+// Команды
+function runCmd() {
+  const raw = document.getElementById('cmdIn').value.trim(); if (!raw) return;
+  const c = raw.toLowerCase();
+  if (c.includes('jour')||c.includes('журнал')) switchTab('jour');
+  else if (c.includes('prj')||c.includes('проект')) switchTab('prj');
+  else if (c.includes('arch')||c.includes('архив')) switchTab('arch');
+  else if (c.includes('media')||c.includes('медиа')) switchTab('media');
+  else if (c.includes('fin')||c.includes('финанс')) switchTab('fin');
+  else if (c.includes('letter')||c.includes('письмо')) openOv('letterModal');
+  else if (c.includes('note')||c.includes('заметк')) openOv('qnModal');
+  else if (c.includes('key')||c.includes('ключ')) openOv('apiModal');
+  else if (c.startsWith('note ')) jData.unshift({ id:'j'+Date.now(), dt: new Date().toISOString().slice(0,16), type:'chat', proj:'📋 Personal', txt: raw.replace(/^note /i,'') });
+  else addAIMsg('user', raw);
+  document.getElementById('cmdIn').value = ''; saveJ(); renderFullJournal(); renderMiniJournal();
+}
+
+// Toast
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+// Инициализация финансовых вкладок (если уже есть в DOM)
+// Вызывается также в loadProjectContent
+</script>
+</body>
+</html>
+<!-- PART 5 END -->
